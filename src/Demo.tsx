@@ -1,62 +1,35 @@
 import React from 'react';
-import styled from 'styled-components';
 
-import mountDemo from './mountDemo';
-
-type Simulation = ReturnType<typeof mountDemo>;
-
-const Svg = styled.svg`
-  user-select: none;
-`;
-
-type SvgCanvasProps = { demo?: Simulation };
-class SvgCanvas extends React.PureComponent<SvgCanvasProps> {
-  componentDidUpdate() {
-    const { demo } = this.props;
-    if (demo) {
-      demo.onUpdate._listener = () => {
-        this.forceUpdate();
-      };
-    }
-  }
-
-  render() {
-    const { demo } = this.props;
-    return (
-      <Svg width={'800px'} height={'600px'}>
-        {demo &&
-          demo.engine.world.composites[0].bodies.map(body => {
-            return (
-              <text {...body.position} key={body.id}>
-                {body.id}
-              </text>
-            );
-          })}
-      </Svg>
-    );
-  }
-}
+import mountDemo, { Simulation } from './mountDemo';
+import SvgCanvas from './SvgCanvas';
 
 type State = {
   demo?: Simulation;
   debugMode: boolean;
 };
 class Demo extends React.PureComponent<{}, State> {
+  container: HTMLElement | null;
+  svgCanvas: SVGSVGElement | null;
   debugCanvasContainer: HTMLElement | null;
   state: State = {
-    debugMode: true,
+    debugMode: false,
   };
 
   componentDidMount() {
-    if (this.debugCanvasContainer) {
-      this.setState({ demo: mountDemo(this.debugCanvasContainer) });
-    }
-    // Todo: [] Perlin noise gravityX for wind
+    this.setState({
+      demo: this.debugCanvasContainer
+        ? mountDemo(this.debugCanvasContainer, true)
+        : mountDemo(this.container, false),
+    });
   }
 
   render() {
     return (
-      <>
+      <section
+        ref={element => {
+          this.container = element;
+        }}
+      >
         {this.state.debugMode && (
           <article
             style={{
@@ -69,8 +42,13 @@ class Demo extends React.PureComponent<{}, State> {
             }}
           />
         )}
-        <SvgCanvas demo={this.state.demo} />
-      </>
+        <SvgCanvas
+          demo={this.state.demo}
+          innerRef={element => {
+            this.svgCanvas = element;
+          }}
+        />
+      </section>
     );
   }
 }

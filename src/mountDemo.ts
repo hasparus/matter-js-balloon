@@ -16,6 +16,8 @@ import {
 
 import SimplexNoise from 'simplex-noise';
 
+export type BalloonBody = Body & { isBalloon: true };
+
 const CHAIN_CIRCLES_COUNT = 10;
 const CHAIN_CIRCLE_RADIUS = 5;
 const BALLOON_FORCE = { x: 0, y: -0.02 };
@@ -60,10 +62,14 @@ const createRopeWithBalloon = () => {
     }
   );
 
-  const balloon = Bodies.circle(700, 500 + CHAIN_CIRCLE_RADIUS * 2, 60, {
-    collisionFilter: { group } as any,
-    mass: 0,
-  });
+  const balloon: BalloonBody = Object.assign(
+    Bodies.circle(700, 500 + CHAIN_CIRCLE_RADIUS * 2, 60, {
+      collisionFilter: { group } as any,
+      mass: 0,
+    }),
+    { isBalloon: true as true }
+  );
+
   Composite.add(rope, balloon);
 
   Composites.chain(rope, 0, -0.5, 0, 0.5, {
@@ -88,15 +94,15 @@ const createRopeWithBalloon = () => {
   };
 };
 
-const attachMouse = (render: Render, engine: Engine) => {
+const attachMouse = (element: HTMLElement, engine: Engine, render?: Render) => {
   // add mouse control
-  const mouse = Mouse.create(render.canvas);
+  const mouse = Mouse.create(element);
   const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
     constraint: {
       stiffness: 0.2,
       render: {
-        visible: true,
+        visible: Boolean(render),
       },
     } as any,
   });
@@ -104,7 +110,9 @@ const attachMouse = (render: Render, engine: Engine) => {
   World.add(engine.world, mouseConstraint);
 
   // keep the mouse in sync with rendering
-  (render as any).mouse = mouse;
+  if (render) {
+    (render as any).mouse = mouse;
+  }
 };
 
 const stabilize = (updates: number, balloon: Body, engine: Engine) => {
@@ -115,27 +123,31 @@ const stabilize = (updates: number, balloon: Body, engine: Engine) => {
   }
 };
 
-const mountDemo = (element: HTMLElement) => {
+const mountDemo = (element: HTMLElement, drawRenderer: boolean) => {
   const engine = Engine.create();
 
-  const render = Render.create({
-    element: element,
-    engine: engine,
-    options: {
-      ...WORLD_SIZE,
-      showAngleIndicator: true,
-      showCollisions: true,
-      showVelocity: true,
-    } as any,
-  });
+  let render = undefined;
+  if (drawRenderer) {
+    render = Render.create({
+      element,
+      engine,
+      options: {
+        ...WORLD_SIZE,
+        showAngleIndicator: true,
+        showCollisions: true,
+        showVelocity: true,
+      } as any,
+    });
 
-  Render.run(render);
+    Render.run(render);
+  }
+
   const { rope, balloon } = createRopeWithBalloon();
   const floor = Bodies.rectangle(400, 630, 1200, 60, { isStatic: true });
 
   World.add(engine.world, [rope, floor] as any);
 
-  attachMouse(render, engine);
+  attachMouse(element, engine, render);
 
   const onUpdate: {
     (): void;
@@ -154,7 +166,7 @@ const mountDemo = (element: HTMLElement) => {
     Body.applyForce(balloon, balloon.position, wind.blow(balloon.position));
     wind.tick();
     Runner.tick(runner, engine, time);
-    onUpdate();
+    setTimeout(onUpdate, 0);
     window.requestAnimationFrame(run);
   };
   stabilize(180, balloon, engine);
@@ -163,9 +175,10 @@ const mountDemo = (element: HTMLElement) => {
   return {
     engine: engine,
     render: render,
-    canvas: render.canvas,
     onUpdate,
   };
 };
 
 export default mountDemo;
+
+export type Simulation = ReturnType<typeof mountDemo>;
