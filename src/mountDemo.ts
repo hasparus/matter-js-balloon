@@ -24,6 +24,29 @@ const WORLD_SIZE = {
   height: 600,
 };
 
+const WIND_POWER = 0.0015;
+const TAU = Math.PI * 2;
+class NoisyWind {
+  private simplex = new SimplexNoise('awesome-seed');
+  private tOffset = 0.01;
+
+  blow(position: Vector): Vector {
+    const xOffset = position.x / WORLD_SIZE.width;
+    const yOffset = position.y / WORLD_SIZE.height;
+    const angle = this.simplex.noise3D(xOffset, yOffset, this.tOffset) * TAU;
+    const windVector = Vector.mult(
+      Vector.rotate({ x: 1, y: 0 }, angle),
+      WIND_POWER
+    );
+    console.log(windVector);
+    return windVector;
+  }
+
+  tick() {
+    this.tOffset = (this.tOffset + 0.001) % 1;
+  }
+}
+
 const createRopeWithBalloon = () => {
   const group = Body.nextGroup(true);
 
@@ -120,21 +143,11 @@ const mountDemo = (element: HTMLElement) => {
   attachMouse(render, engine);
 
   const runner = Runner.create({});
-
-  const simplex = new SimplexNoise('awesome-seed');
-  let tOffset = 0.01;
+  const wind = new NoisyWind();
   const run = (time: number) => {
-    const WIND_POWER = 0.0015;
-    const xOffset = balloon.position.x / WORLD_SIZE.width;
-    const yOffset = balloon.position.y / WORLD_SIZE.height;
-    const angle = simplex.noise3D(xOffset, yOffset, tOffset) * Math.PI * 2;
-    const wind = Vector.mult(Vector.rotate({ x: 1, y: 0 }, angle), WIND_POWER);
-    console.log(wind);
-    tOffset = (tOffset + 0.001) % 1;
-
     Body.applyForce(balloon, balloon.position, BALLOON_FORCE);
-    Body.applyForce(balloon, balloon.position, wind);
-
+    Body.applyForce(balloon, balloon.position, wind.blow(balloon.position));
+    wind.tick();
     Runner.tick(runner, engine, time);
     window.requestAnimationFrame(run);
   };

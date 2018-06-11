@@ -17,11 +17,13 @@ class Demo extends React.PureComponent {
 
   render() {
     return (
-      <article
-        ref={element => {
-          this.container = element;
-        }}
-      />
+      <>
+        <article
+          ref={element => {
+            this.container = element;
+          }}
+        />
+      </>
     );
   }
 }
