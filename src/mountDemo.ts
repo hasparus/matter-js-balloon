@@ -34,12 +34,7 @@ class NoisyWind {
     const xOffset = position.x / WORLD_SIZE.width;
     const yOffset = position.y / WORLD_SIZE.height;
     const angle = this.simplex.noise3D(xOffset, yOffset, this.tOffset) * TAU;
-    const windVector = Vector.mult(
-      Vector.rotate({ x: 1, y: 0 }, angle),
-      WIND_POWER
-    );
-    console.log(windVector);
-    return windVector;
+    return Vector.mult(Vector.rotate({ x: 1, y: 0 }, angle), WIND_POWER);
   }
 
   tick() {
@@ -142,6 +137,16 @@ const mountDemo = (element: HTMLElement) => {
 
   attachMouse(render, engine);
 
+  const onUpdate: {
+    (): void;
+    // setListener: (listener: () => void) => void;
+    _listener?: () => void;
+  } = () => {
+    if (onUpdate._listener) {
+      onUpdate._listener();
+    }
+  };
+
   const runner = Runner.create({});
   const wind = new NoisyWind();
   const run = (time: number) => {
@@ -149,6 +154,7 @@ const mountDemo = (element: HTMLElement) => {
     Body.applyForce(balloon, balloon.position, wind.blow(balloon.position));
     wind.tick();
     Runner.tick(runner, engine, time);
+    onUpdate();
     window.requestAnimationFrame(run);
   };
   stabilize(180, balloon, engine);
@@ -158,6 +164,7 @@ const mountDemo = (element: HTMLElement) => {
     engine: engine,
     render: render,
     canvas: render.canvas,
+    onUpdate,
   };
 };
 
