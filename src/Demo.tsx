@@ -69,6 +69,8 @@ class Demo extends React.PureComponent<{}, State> {
           width: '100%',
           height: '100%',
           display: 'flex',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         <div

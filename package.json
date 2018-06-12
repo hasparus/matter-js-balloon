@@ -6,6 +6,8 @@
   "dependencies": {
     "@types/debounce": "^1.0.0",
     "@types/matter-js": "0.10.1",
+    "@types/ramda": "^0.25.32",
+    "debounce": "^1.1.0",
     "matter-js": "0.14.1",
     "ramda": "^0.25.0",
     "react": "latest",

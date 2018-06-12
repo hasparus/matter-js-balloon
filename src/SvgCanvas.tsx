@@ -21,6 +21,15 @@ const enum Colors {
   BlackOlive = '#3c3c3b',
 }
 
+const Defs = () => (
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor={'#42E496'} />
+      <stop offset="100%" stopColor={'#3BB4B7'} />
+    </linearGradient>
+  </defs>
+);
+
 const MouseBounds = styled.div`
   position: absolute;
 `;
@@ -39,18 +48,13 @@ const Circle = ({
   body: { position, circleRadius },
   fill,
 }: CircleProps) => (
-  <g>
-    {/* <text {...props.position} key={props.id}>
-      {(props as CircleBody).circleRadius}
-    </text> */}
-    <circle
-      onClick={onClick}
-      cx={position.x}
-      cy={position.y}
-      r={circleRadius}
-      fill={fill}
-    />
-  </g>
+  <circle
+    onClick={onClick}
+    cx={position.x}
+    cy={position.y}
+    r={circleRadius}
+    fill={fill}
+  />
 );
 
 const Rope = ({ constraints, bodies }: Partial<Composite>) => (
@@ -75,7 +79,7 @@ const Rope = ({ constraints, bodies }: Partial<Composite>) => (
             key={`${bodyA.id}~${bodyB.id}`}
             {...positions}
             strokeWidth={2}
-            stroke="black"
+            stroke={Colors.Eggshell}
           />
         );
       }
@@ -87,11 +91,15 @@ const Rope = ({ constraints, bodies }: Partial<Composite>) => (
           <Circle
             key={body.id}
             body={body as CircleBody}
-            fill="blue"
+            fill={Colors.Cherry}
             onClick={() => console.log('balloon clicked!')}
           />
         ) : (
-          <Circle key={body.id} body={body as CircleBody} fill="hotpink" />
+          <Circle
+            key={body.id}
+            body={body as CircleBody}
+            fill={'transparent'}
+          />
         )
     )}
   </>
@@ -102,6 +110,8 @@ const Svg = styled.svg`
   height: auto;
   user-select: none;
   shape-rendering: geometricPrecision;
+
+  background: ${Colors.Blue};
 `;
 
 type SvgCanvasProps = {
@@ -133,7 +143,8 @@ class SvgCanvas extends React.PureComponent<SvgCanvasProps> {
 
     return (
       <>
-        <Svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+        <Svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+          <Defs />
           <rect
             x={0}
             y={0}
