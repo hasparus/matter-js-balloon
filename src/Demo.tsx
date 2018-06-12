@@ -1,4 +1,5 @@
 import React from 'react';
+import debounce from 'debounce';
 
 import mountDemo, { Simulation } from './mountDemo';
 import SvgCanvas from './SvgCanvas';
@@ -6,30 +7,77 @@ import SvgCanvas from './SvgCanvas';
 type State = {
   demo?: Simulation;
   debugMode: boolean;
+  mouseBounds?: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
 };
 class Demo extends React.PureComponent<{}, State> {
-  container: HTMLElement | null;
-  svgCanvas: SVGSVGElement | null;
+  worldSizeSensor: SVGRectElement | null;
+  mouseBoundsElement: HTMLDivElement | null;
   debugCanvasContainer: HTMLElement | null;
   state: State = {
     debugMode: false,
   };
 
+  private handleResize = debounce(() => {
+    console.log('resize!');
+    if (this.worldSizeSensor) {
+      const { demo } = this.state;
+      const rect = this.worldSizeSensor.getBoundingClientRect();
+      this.setState({
+        mouseBounds: {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+        },
+      });
+      demo.handleResize(rect.width, rect.height);
+    }
+  }, 200);
+
+  private mouseBoundsElementRef = (e: HTMLDivElement) => {
+    console.log('mbr');
+    this.mouseBoundsElement = e;
+  };
+
+  private worldSizeSensorRef = (e: SVGRectElement) => {
+    this.worldSizeSensor = e;
+    console.log('wsr');
+    this.handleResize();
+  };
+
   componentDidMount() {
     this.setState({
-      demo: this.debugCanvasContainer
-        ? mountDemo(this.debugCanvasContainer, true)
-        : mountDemo(this.container, false),
+      demo: mountDemo(this.mouseBoundsElement, this.debugCanvasContainer),
     });
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
   }
 
   render() {
+    const { mouseBounds } = this.state;
     return (
       <section
-        ref={element => {
-          this.container = element;
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
         }}
       >
+        <div
+          ref={this.mouseBoundsElementRef}
+          style={{
+            position: 'absolute',
+            ...mouseBounds,
+          }}
+        />
         {this.state.debugMode && (
           <article
             style={{
@@ -44,9 +92,7 @@ class Demo extends React.PureComponent<{}, State> {
         )}
         <SvgCanvas
           demo={this.state.demo}
-          innerRef={element => {
-            this.svgCanvas = element;
-          }}
+          worldSizeSensorRef={this.worldSizeSensorRef}
         />
       </section>
     );

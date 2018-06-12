@@ -4,9 +4,9 @@
   "private": true,
   "main": "src/index.tsx",
   "dependencies": {
+    "@types/debounce": "^1.0.0",
     "@types/matter-js": "0.10.1",
     "matter-js": "0.14.1",
-    "matter-tools": "0.11.1",
     "ramda": "^0.25.0",
     "react": "latest",
     "react-dom": "latest",

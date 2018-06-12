@@ -5,21 +5,50 @@ import { fromPairs, toPairs, KeyValuePair } from 'ramda';
 import { Simulation, BalloonBody } from './mountDemo';
 import { Body, Vector, Composite } from 'matter-js';
 
+/*
+  Todo:
+    [ ] Benchmark Rope renderng (performWorkOnRoot is 14ms on dev) on production build
+        Rewrite it to native SVG attributes mutations
+        Benchmark new version
+        Choose more performant
+*/
+
+const enum Colors {
+  Blue = '#1446a0',
+  Cherry = '#db3069',
+  Sandstorm = '#f5d547',
+  Eggshell = '#ebebd3',
+  BlackOlive = '#3c3c3b',
+}
+
+const MouseBounds = styled.div`
+  position: absolute;
+`;
+
 type CircleBody = {
   circleRadius: number;
 } & Body;
 
-type CircleProps = CircleBody & { fill?: string };
-const Circle = (props: CircleProps) => (
-  <g key={props.id}>
+type CircleProps = {
+  fill?: string;
+  onClick?: (event: React.MouseEvent<SVGCircleElement>) => void;
+  body: CircleBody;
+};
+const Circle = ({
+  onClick,
+  body: { position, circleRadius },
+  fill,
+}: CircleProps) => (
+  <g>
     {/* <text {...props.position} key={props.id}>
       {(props as CircleBody).circleRadius}
     </text> */}
     <circle
-      cx={props.position.x}
-      cy={props.position.y}
-      r={props.circleRadius}
-      fill={props.fill}
+      onClick={onClick}
+      cx={position.x}
+      cy={position.y}
+      r={circleRadius}
+      fill={fill}
     />
   </g>
 );
@@ -55,22 +84,29 @@ const Rope = ({ constraints, bodies }: Partial<Composite>) => (
     {bodies.map(
       body =>
         (body as BalloonBody).isBalloon ? (
-          <Circle {...body as CircleBody} fill="blue" />
+          <Circle
+            key={body.id}
+            body={body as CircleBody}
+            fill="blue"
+            onClick={() => console.log('balloon clicked!')}
+          />
         ) : (
-          <Circle {...body as CircleBody} fill="hotpink" />
+          <Circle key={body.id} body={body as CircleBody} fill="hotpink" />
         )
     )}
   </>
 );
 
 const Svg = styled.svg`
+  width: 100%;
+  height: auto;
   user-select: none;
   shape-rendering: geometricPrecision;
 `;
 
 type SvgCanvasProps = {
   demo?: Simulation;
-  innerRef?: (element: SVGSVGElement) => void;
+  worldSizeSensorRef: (element: SVGRectElement) => void;
 };
 class SvgCanvas extends React.PureComponent<SvgCanvasProps> {
   componentDidUpdate() {
@@ -83,18 +119,37 @@ class SvgCanvas extends React.PureComponent<SvgCanvasProps> {
   }
 
   render() {
-    const { demo, innerRef } = this.props;
+    const { demo, worldSizeSensorRef } = this.props;
+    if (!demo) {
+      return null;
+    }
+
+    const {
+      WORLD_SIZE,
+      engine: {
+        world: { composites },
+      },
+    } = demo;
+
     return (
-      <Svg width={'800px'} height={'600px'} innerRef={innerRef}>
-        {demo &&
-          demo.engine.world.composites.map(composite => (
+      <>
+        <Svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+          <rect
+            x={0}
+            y={0}
+            {...WORLD_SIZE}
+            ref={worldSizeSensorRef}
+            fill="transparent"
+          />
+          {composites.map(composite => (
             <Rope
               key={composite.id}
               constraints={composite.constraints}
               bodies={composite.bodies}
             />
           ))}
-      </Svg>
+        </Svg>
+      </>
     );
   }
 }

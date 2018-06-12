@@ -113,6 +113,8 @@ const attachMouse = (element: HTMLElement, engine: Engine, render?: Render) => {
   if (render) {
     (render as any).mouse = mouse;
   }
+
+  return mouse;
 };
 
 const stabilize = (updates: number, balloon: Body, engine: Engine) => {
@@ -123,13 +125,16 @@ const stabilize = (updates: number, balloon: Body, engine: Engine) => {
   }
 };
 
-const mountDemo = (element: HTMLElement, drawRenderer: boolean) => {
+const mountDemo = (
+  mouseBoundsElement: HTMLElement,
+  debugCanvasContainerElement?: HTMLElement
+) => {
   const engine = Engine.create();
 
   let render = undefined;
-  if (drawRenderer) {
+  if (debugCanvasContainerElement) {
     render = Render.create({
-      element,
+      element: debugCanvasContainerElement,
       engine,
       options: {
         ...WORLD_SIZE,
@@ -143,11 +148,17 @@ const mountDemo = (element: HTMLElement, drawRenderer: boolean) => {
   }
 
   const { rope, balloon } = createRopeWithBalloon();
-  const floor = Bodies.rectangle(400, 630, 1200, 60, { isStatic: true });
 
-  World.add(engine.world, [rope, floor] as any);
+  World.add(engine.world, rope);
 
-  attachMouse(element, engine, render);
+  const mouse = attachMouse(mouseBoundsElement, engine, render);
+
+  const handleResize = (width: number, height: number) => {
+    Mouse.setScale(mouse, {
+      x: WORLD_SIZE.width / width,
+      y: WORLD_SIZE.height / height,
+    });
+  };
 
   const onUpdate: {
     (): void;
@@ -166,7 +177,7 @@ const mountDemo = (element: HTMLElement, drawRenderer: boolean) => {
     Body.applyForce(balloon, balloon.position, wind.blow(balloon.position));
     wind.tick();
     Runner.tick(runner, engine, time);
-    setTimeout(onUpdate, 0);
+    onUpdate();
     window.requestAnimationFrame(run);
   };
   stabilize(180, balloon, engine);
@@ -174,8 +185,10 @@ const mountDemo = (element: HTMLElement, drawRenderer: boolean) => {
 
   return {
     engine: engine,
-    render: render,
+    render,
+    WORLD_SIZE,
     onUpdate,
+    handleResize,
   };
 };
 
